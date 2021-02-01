@@ -12,49 +12,43 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.error.CustomErrorType;
 import com.example.model.Student;
-import com.example.util.DateUtil;
+import com.example.repository.StudentRepository;
 
 
 @RestController
 @RequestMapping("students")
 public class StudentEndpoint {
-	private DateUtil dateUtil;
+	private final StudentRepository studentDAO;
 	@Autowired
-	public StudentEndpoint(DateUtil dateUtil) {
-		this.dateUtil = dateUtil;
+	public StudentEndpoint(StudentRepository studentDAO) {
+		super();
+		this.studentDAO = studentDAO;
 	}
+
 	@GetMapping
 	public ResponseEntity<?> listAll(){
-//		System.out.println("+++++++"+dateUtil.formatLocalDateTimeDatabaseStyle(LocalDateTime.now()));
-		return new ResponseEntity<>(Student.studentList,HttpStatus.OK);
+		return new ResponseEntity<>(studentDAO.findAll(),HttpStatus.OK); 
 	}
 	
+
 	@GetMapping(path = "/{id}")
-	public ResponseEntity<?> getStudentById(@PathVariable("id") long id){
-		Student student = new Student();
-		student.setId(id);		
-		long index = Student.studentList.indexOf(student);
-		if(index == -1) {
-			return new ResponseEntity<>(new CustomErrorType("Student not Found@@@"), HttpStatus.NOT_FOUND);
-		}
-		return new ResponseEntity<>(Student.studentList.get((int)index), HttpStatus.OK);
+	public ResponseEntity<?> getStudentById(@PathVariable("id") Long id){
+		Student student = studentDAO.findById(id).orElseThrow(()-> new IllegalStateException("Esse parça não consta"));
+		return new ResponseEntity<>(student, HttpStatus.OK);
 	}
 	@PostMapping	
 	public ResponseEntity<?> save(@RequestBody Student student){
-		Student.studentList.add(student);
-		return new ResponseEntity<>(student,HttpStatus.OK);
+		return new ResponseEntity<>(studentDAO.save(student),HttpStatus.OK);
 	}
-	@DeleteMapping
-	public ResponseEntity<?> delete(@RequestBody Student student){
-		Student.studentList.remove(student);
-		return new ResponseEntity<>(student,HttpStatus.OK);
+	@DeleteMapping(path = "/{id}")
+	public ResponseEntity<?> delete(@PathVariable Long id){
+		studentDAO.deleteById(id);
+		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	@PutMapping
 	public ResponseEntity<?> update(@RequestBody Student student){
-		Student.studentList.remove(student);
-		Student.studentList.add(student);
+		studentDAO.save(student);
 		return new ResponseEntity<>(student,HttpStatus.OK);
 	}
 	
